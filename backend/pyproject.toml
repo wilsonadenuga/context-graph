@@ -15,6 +15,7 @@ dependencies = [
     "httpx>=0.28.0",
     "sse-starlette>=2.0.0",
     "graphdatascience>=1.19",
+    "boto3>=1.26.0",
 ]
 
 [project.optional-dependencies]

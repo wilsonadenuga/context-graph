@@ -60,12 +60,31 @@ class AnthropicConfig:
 
 
 @dataclass
+class BedrockConfig:
+    """AWS Bedrock configuration."""
+
+    region: str
+    model_id: str
+
+    @classmethod
+    def from_env(cls) -> "BedrockConfig":
+        return cls(
+            region=os.getenv("AWS_REGION", "us-east-1"),
+            model_id=os.getenv(
+                "BEDROCK_MODEL_ID",
+                "us.anthropic.claude-sonnet-4-5-20251001-v2:0",
+            ),
+        )
+
+
+@dataclass
 class AppConfig:
     """Main application configuration."""
 
     neo4j: Neo4jConfig
     openai: OpenAIConfig
     anthropic: AnthropicConfig
+    bedrock: BedrockConfig
 
     # FastRP embedding dimensions (structural)
     fastrp_dimensions: int = 128
@@ -81,6 +100,7 @@ class AppConfig:
             neo4j=Neo4jConfig.from_env(),
             openai=OpenAIConfig.from_env(),
             anthropic=AnthropicConfig.from_env(),
+            bedrock=BedrockConfig.from_env(),
             fastrp_dimensions=int(os.getenv("FASTRP_DIMENSIONS", "128")),
             host=os.getenv("HOST", "0.0.0.0"),
             port=int(os.getenv("PORT", "8000")),

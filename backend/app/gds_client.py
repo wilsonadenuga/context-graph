@@ -42,7 +42,7 @@ class GDSClient:
     def create_transaction_graph_projection(self) -> Graph:
         """Create the transaction graph projection for influence scoring."""
 
-        self.gds.graph.drop('transaction-graph', False)
+        self.gds.graph.drop("transaction-graph", False)
         g_transactions, _ = self.gds.graph.cypher.project(
             """//cypher
             cypher runtime = parallel
@@ -57,14 +57,15 @@ class GDSClient:
                     relationshipProperties: {amount: tr.amount}
                 }
                 )
-            """)
+            """
+        )
 
         return g_transactions
-    
+
     def create_account_graph_projection(self) -> Graph:
         """Create the account graph projection showing accounts that share transactions."""
 
-        self.gds.graph.drop('account-graph', False)
+        self.gds.graph.drop("account-graph", False)
         g_account, _ = self.gds.graph.cypher.project(
             """//cypher
             cypher runtime = parallel
@@ -83,15 +84,14 @@ class GDSClient:
                     undirectedRelationshipTypes: ['SHARE_TRANSACTIONS']
                 }
                 )
-            """)
+            """
+        )
         return g_account
-    
 
     def create_decision_graph_projection(self) -> Graph:
-        """Create the decision graph projection for finding similarity between decisions algorithms.
-        """
+        """Create the decision graph projection for finding similarity between decisions algorithms."""
 
-        self.gds.graph.drop('decision-graph', False)
+        self.gds.graph.drop("decision-graph", False)
         g_decisions, _ = self.gds.graph.cypher.project(
             """//cypher
             cypher runtime = parallel
@@ -128,19 +128,19 @@ class GDSClient:
                 undirectedRelationshipTypes: ["SHARES_FACTORS"]
             }
             )
-            """)
+            """
+        )
         return g_decisions
 
-        
     # ============================================
     # RELATED ACCOUNTS VIA NODE SIMILARITY
     # ============================================
 
     def find_related_accounts(
         self,
-    ) ->  Any:
+    ) -> Any:
         """Find accounts that share common transactions."""
-        
+
         with self.driver.session(database=self.database) as session:
             session.run("""//cypher
                         MATCH ()-[r:SHARES_HIGH_PERCENTAGE_OF_TRANSACTIONS_WITH]->()
@@ -154,13 +154,13 @@ class GDSClient:
 
         node_similarity_result = self.gds.v2.node_similarity.write(
             g_transactions,
-            relationship_types = ['HAS_TRANSACTION'],
-            relationship_weight_property = 'amount',
-            top_k = 5,
-            similarity_cutoff = 0.2,
-            write_relationship_type = 'SHARES_HIGH_PERCENTAGE_OF_TRANSACTIONS_WITH',
-            write_property = 'weighted_jaccard_similarity',
-            use_components = True
+            relationship_types=["HAS_TRANSACTION"],
+            relationship_weight_property="amount",
+            top_k=5,
+            similarity_cutoff=0.2,
+            write_relationship_type="SHARES_HIGH_PERCENTAGE_OF_TRANSACTIONS_WITH",
+            write_property="weighted_jaccard_similarity",
+            use_components=True,
         )
 
         g_transactions.drop()
@@ -173,7 +173,7 @@ class GDSClient:
         self,
     ) -> Any:
         """Detect communities of related accounts using Leiden."""
-        #Clean up previous community assignments
+        # Clean up previous community assignments
         with self.driver.session(database=self.database) as session:
             session.run("""//cypher
                         MATCH (d:Account)
@@ -182,7 +182,7 @@ class GDSClient:
                         REMOVE d.community_id
                         } IN CONCURRENT TRANSACTIONS
                         """)
-            
+
             session.run("""//cypher
                         MATCH ()-[b:BELONGS_TO_ACCOUNT_COMMUNITY]->()
                         CALL (b)
@@ -190,7 +190,7 @@ class GDSClient:
                             DELETE b
                         } IN TRANSACTIONS
                         """)
-            
+
             session.run("""//cypher
                         MATCH (c:AccountCommunity)
                         CALL (c)
@@ -198,13 +198,11 @@ class GDSClient:
                             DELETE c
                         } IN CONCURRENT TRANSACTIONS
                         """)
-        
+
         g_accounts = self.create_account_graph_projection()
 
         leiden_result = self.gds.v2.leiden.write(
-            g_accounts,
-            random_seed = 42,
-            write_property = 'community_id'
+            g_accounts, random_seed=42, write_property="community_id"
         )
 
         with self.driver.session(database=self.database) as session:
@@ -236,7 +234,7 @@ class GDSClient:
                 } IN CONCURRENT TRANSACTIONS
                 """
             )
-        
+
         g_accounts.drop()
 
         return leiden_result
@@ -248,8 +246,7 @@ class GDSClient:
     def generate_fastrp_embeddings(
         self,
     ) -> Any:
-        """Generate FastRP embeddings for nodes and use them to create similarity relationships.
-        """
+        """Generate FastRP embeddings for nodes and use them to create similarity relationships."""
 
         # Drop previously created FastRP embeddings and KNN relationships if they exist
         with self.driver.session(database=self.database) as session:
@@ -270,36 +267,32 @@ class GDSClient:
 
         g_decisions = self.create_decision_graph_projection()
 
-
         # Calculate FastRP embeddings
         self.gds.v2.fast_rp.mutate(
             g_decisions,
-            embedding_dimension = self.fastrp_dimensions,
-            iteration_weights = [0.0, 0.0, 1.0, 1.0],
-            mutate_property = 'fast_rp_embedding'
+            embedding_dimension=self.fastrp_dimensions,
+            iteration_weights=[0.0, 0.0, 1.0, 1.0],
+            mutate_property="fast_rp_embedding",
         )
 
         fast_rp_write_result = self.gds.v2.graph.node_properties.write(
-            g_decisions,
-            ['fast_rp_embedding']
+            g_decisions, ["fast_rp_embedding"]
         )
 
         # Create KNN relationships based on FastRP embeddings
         knn_write_result = self.gds.v2.knn.write(
             g_decisions,
-            node_properties = ['fast_rp_embedding'],
-            top_k = 10,
-            similarity_cutoff = 0.6,
+            node_properties=["fast_rp_embedding"],
+            top_k=10,
+            similarity_cutoff=0.6,
             initial_sampler="randomWalk",
-            write_relationship_type = 'HAS_SIMILAR_FACTORS',
-            write_property = 'fast_rp_cosine_similarity'
-            )
-        
+            write_relationship_type="HAS_SIMILAR_FACTORS",
+            write_property="fast_rp_cosine_similarity",
+        )
+
         # Delete KNN relationships not in same WCC component
-        self.gds.v2.wcc.write(
-            g_decisions,
-            write_property = 'decision_wcc_id')
-        
+        self.gds.v2.wcc.write(g_decisions, write_property="decision_wcc_id")
+
         with self.driver.session(database=self.database) as session:
             delete_result = session.run(
                 """//cypher
@@ -308,16 +301,18 @@ class GDSClient:
                 CALL (r) {
                     DELETE r
                 } IN CONCURRENT TRANSACTIONS
-                """)
+                """
+            )
             delete_summary = delete_result.consume().counters
-        
+
             session.run(
                 """//cypher
                 MATCH (d:Decision)
                 CALL (d) {
                     REMOVE d.decision_wcc_id
                 } IN CONCURRENT TRANSACTIONS
-                """)
+                """
+            )
 
         g_decisions.drop()
 
@@ -331,8 +326,8 @@ class GDSClient:
         self,
     ) -> Any:
         """Detect communities of related decisions using Louvain."""
-        
-        #Clean up previous community assignments
+
+        # Clean up previous community assignments
         with self.driver.session(database=self.database) as session:
             session.run("""//cypher
                         MATCH (d:Decision)
@@ -341,7 +336,7 @@ class GDSClient:
                         REMOVE d.community_id
                         } IN CONCURRENT TRANSACTIONS
                         """)
-            
+
             session.run("""//cypher
                         MATCH ()-[b:BELONGS_TO_DECISION_COMMUNITY]->()
                         CALL (b)
@@ -349,7 +344,7 @@ class GDSClient:
                             DELETE b
                         } IN TRANSACTIONS
                         """)
-            
+
             session.run("""//cypher
                         MATCH (c:DecisionCommunity)
                         CALL (c)
@@ -357,13 +352,11 @@ class GDSClient:
                             DELETE c
                         } IN CONCURRENT TRANSACTIONS
                         """)
-        
+
         g_decisions = self.create_decision_graph_projection()
 
         leiden_result = self.gds.v2.leiden.write(
-            g_decisions,
-            random_seed = 42,
-            write_property = 'community_id'
+            g_decisions, random_seed=42, write_property="community_id"
         )
 
         with self.driver.session(database=self.database) as session:
@@ -390,21 +383,19 @@ class GDSClient:
         g_decisions.drop()
 
         return leiden_result
-    
+
     # ============================================
     # PAGE RANK NODE INFLUENCE SCORING
     # ============================================
-    def calculate_flagged_transaction_influence(
-        self
-    ) -> Any:
+    def calculate_flagged_transaction_influence(self) -> Any:
         """Calculate influence scores for accounts showing how much they are influenced by flagged transactions."""
         # Create graph projection
         g_transactions = self.create_transaction_graph_projection()
 
         self.gds.v2.graph.relationships.to_undirected(
             g_transactions,
-            relationship_type = 'HAS_TRANSACTION',
-            mutate_relationship_type = 'UNDIRECTED_HAS_TRANSACTION'
+            relationship_type="HAS_TRANSACTION",
+            mutate_relationship_type="UNDIRECTED_HAS_TRANSACTION",
         )
 
         flagged_node_records, _, _ = self.driver.execute_query(
@@ -412,42 +403,40 @@ class GDSClient:
             MATCH (tr:Transaction)
             WHERE tr.status = 'flagged'
             RETURN collect(id(tr)) AS flagged_node_ids
-            """)
-        
-        flagged_node_ids = flagged_node_records[0]['flagged_node_ids']
+            """
+        )
+
+        flagged_node_ids = flagged_node_records[0]["flagged_node_ids"]
 
         self.gds.v2.page_rank.mutate(
             g_transactions,
-            relationship_types = ['UNDIRECTED_HAS_TRANSACTION'],
-            source_nodes = flagged_node_ids,
-            mutate_property = 'flagged_transaction_influence',
-            scaler = 'MinMax'
+            relationship_types=["UNDIRECTED_HAS_TRANSACTION"],
+            source_nodes=flagged_node_ids,
+            mutate_property="flagged_transaction_influence",
+            scaler="MinMax",
         )
 
         write_result = self.gds.v2.graph.node_properties.write(
-            g_transactions,
-            ['flagged_transaction_influence'],
-            node_labels = ['Account']
+            g_transactions, ["flagged_transaction_influence"], node_labels=["Account"]
         )
 
         g_transactions.drop()
 
         return write_result
-        
-    
+
     # ============================================
     # FULL GDS WORKFLOW
-    # ============================================      
+    # ============================================
 
     def refresh_gds_analyses(
         self,
     ) -> None:
-        """Run full GDS workflow: 
-            1. Find related accounts via Node Similarity
-            2. Create Leiden communities for accounts
-            3. Generate FastRP embeddings for decisions and create KNN relationships
-            4. Run Leiden community detection to compute community IDs for decisions
-            5. Run PageRank influence scoring for flagged transactions
+        """Run full GDS workflow:
+        1. Find related accounts via Node Similarity
+        2. Create Leiden communities for accounts
+        3. Generate FastRP embeddings for decisions and create KNN relationships
+        4. Run Leiden community detection to compute community IDs for decisions
+        5. Run PageRank influence scoring for flagged transactions
         """
         self.logger.info("Starting GDS analyses refresh...")
 
@@ -506,9 +495,9 @@ class GDSClient:
 
     # ============================================
     # RETURN GDS-BASED RESULTS
-    # ============================================  
+    # ============================================
 
-    def find_similar_decisions(self, decision_id: str, limit: int =10) -> list[dict[str, Any]]:
+    def find_similar_decisions(self, decision_id: str, limit: int = 10) -> list[dict[str, Any]]:
         """Get decisions similar to the given decision based on FastRP embeddings."""
         records, _, _ = self.driver.execute_query(
             """//cypher
@@ -524,11 +513,11 @@ class GDSClient:
             """,
             {"decision_id": decision_id, "limit": limit},
         )
-    
+
         similar_decisions = [dict(record) for record in records]
 
         return similar_decisions
-    
+
     def get_decision_community(self, decision_id: str, example_count: int) -> dict[str, Any]:
         """Get information about the decision community for a given decision."""
         records, _, _ = self.driver.execute_query(
@@ -551,13 +540,12 @@ class GDSClient:
             """,
             {"decision_id": decision_id, "example_count": example_count},
         )
-    
+
         community_info = dict(records[0]) if records else {}
 
         return community_info
-    
 
-    def detect_fraud_patterns(self, account_id: str, neighbor_count: int =5) -> dict[str, Any]:
+    def detect_fraud_patterns(self, account_id: str, neighbor_count: int = 5) -> dict[str, Any]:
         """Analyze accounts or transactions for potential fraud patterns using graph structure analysis.
         Checks an account's proximity to flagged transactions as well as the prevalance of flagged transactions in the community of related accounts.
         """
@@ -587,12 +575,14 @@ class GDSClient:
             """,
             {"account_id": account_id, "neighbor_count": neighbor_count},
         )
-    
+
         fraud_analysis = dict(records[0]) if records else {}
 
         return fraud_analysis
-    
-    def find_accounts_with_high_shared_transaction_volume(self, account_id: str) -> list[dict[str, Any]]:
+
+    def find_accounts_with_high_shared_transaction_volume(
+        self, account_id: str
+    ) -> list[dict[str, Any]]:
         """Get accounts with high shared transaction volume."""
         records, _, _ = self.driver.execute_query(
             """//cypher
@@ -607,10 +597,11 @@ class GDSClient:
             """,
             {"account_id": account_id},
         )
-    
+
         related_accounts = [dict(record) for record in records]
 
         return related_accounts
+
 
 # Singleton instance
 gds_client = GDSClient()

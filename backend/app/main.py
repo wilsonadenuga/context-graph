@@ -26,12 +26,7 @@ from .agent import ContextGraphAgent
 from .config import config
 from .context_graph_client import context_graph_client
 from .gds_client import gds_client
-from .models import (
-    ChatRequest,
-    ChatResponse,
-    DecisionRequest,
-    GraphData
-)
+from .models import ChatRequest, ChatResponse, DecisionRequest, GraphData
 from .vector_client import vector_client
 
 
