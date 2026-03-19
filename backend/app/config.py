@@ -65,6 +65,9 @@ class BedrockConfig:
 
     region: str
     model_id: str
+    temperature: float
+    max_tokens: int
+    top_p: float
 
     @classmethod
     def from_env(cls) -> "BedrockConfig":
@@ -74,6 +77,9 @@ class BedrockConfig:
                 "BEDROCK_MODEL_ID",
                 "us.anthropic.claude-sonnet-4-5-20251001-v2:0",
             ),
+            temperature=float(os.getenv("BEDROCK_TEMPERATURE", "1.0")),
+            max_tokens=int(os.getenv("BEDROCK_MAX_TOKENS", "4096")),
+            top_p=float(os.getenv("BEDROCK_TOP_P", "0.999")),
         )
 
 
@@ -85,6 +91,9 @@ class AppConfig:
     openai: OpenAIConfig
     anthropic: AnthropicConfig
     bedrock: BedrockConfig
+
+    # Agent provider selection
+    agent_provider: str = "claude"
 
     # FastRP embedding dimensions (structural)
     fastrp_dimensions: int = 128
@@ -101,6 +110,7 @@ class AppConfig:
             openai=OpenAIConfig.from_env(),
             anthropic=AnthropicConfig.from_env(),
             bedrock=BedrockConfig.from_env(),
+            agent_provider=os.getenv("AGENT_PROVIDER", "claude"),
             fastrp_dimensions=int(os.getenv("FASTRP_DIMENSIONS", "128")),
             host=os.getenv("HOST", "0.0.0.0"),
             port=int(os.getenv("PORT", "8000")),

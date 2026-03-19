@@ -109,7 +109,9 @@ Combine semantic similarity (text embeddings) with structural similarity (FastRP
 - Python 3.11+ with [uv](https://docs.astral.sh/uv/) package manager
 - Node.js 18+
 - Neo4j AuraDS instance (or local Neo4j Enterprise with GDS plugin)
-- Anthropic API Key
+- **Agent Provider** (choose one):
+  - Anthropic API Key (for Claude SDK)
+  - AWS Account with Bedrock access (for AWS Bedrock)
 - OpenAI API Key (for embeddings)
 
 ## Quick Start
@@ -192,6 +194,59 @@ For the best experience with GDS algorithms:
 3. Update your `.env` with the connection details
 
 AuraDS includes all GDS algorithms (FastRP, KNN, Node Similarity, Louvain, PageRank) without additional configuration.
+
+## Agent Provider Options
+
+This demo supports two agent providers:
+
+### Option 1: Claude SDK (Default)
+
+Uses Anthropic's Claude API directly via the Claude Agent SDK.
+
+```bash
+# In .env
+AGENT_PROVIDER=claude
+ANTHROPIC_API_KEY=your_anthropic_api_key
+```
+
+### Option 2: AWS Bedrock
+
+Uses Claude via AWS Bedrock for enterprise deployments with AWS infrastructure.
+
+```bash
+# In .env
+AGENT_PROVIDER=bedrock
+AWS_REGION=us-east-1
+BEDROCK_MODEL_ID=us.anthropic.claude-sonnet-4-5-20251001-v2:0
+```
+
+**AWS Credentials Setup:**
+
+Bedrock requires AWS credentials. Choose one method:
+
+1. **AWS CLI** (recommended for local development):
+   ```bash
+   aws configure
+   # Enter your AWS Access Key ID, Secret Access Key, and region
+   ```
+
+2. **Environment Variables** (for testing):
+   ```bash
+   export AWS_ACCESS_KEY_ID=your_access_key_id
+   export AWS_SECRET_ACCESS_KEY=your_secret_access_key
+   export AWS_REGION=us-east-1
+   ```
+
+3. **IAM Role** (recommended for production):
+   - When running on AWS infrastructure (EC2, ECS, Lambda), credentials are automatically provided
+   - No configuration needed
+
+**Bedrock Model Access:**
+
+Ensure you have access to Claude models in Bedrock:
+1. Go to AWS Console → Bedrock → Model access
+2. Request access to Anthropic Claude models
+3. Wait for approval (usually instant for Claude models)
 
 ## Using Local Neo4j with Docker
 
