@@ -18,9 +18,7 @@ Return ONLY a table with two columns:
 - **Section** — the section/clause reference
 - **Discretion Exercised** — a brief plain English description of what the SoS can do
 
-No quotes from the document, no additional commentary outside the table.
-
-Example format:
+Example response format:
 | Section | Discretion Exercised |
 |---|---|
 | Section 3(1) | May grant or refuse leave to remain |
@@ -32,5 +30,11 @@ Example format:
 
 You are a lawyer. Review the legal document below and find every section where the Secretary of State has discretion — meaning any power to make a judgment call rather than follow a fixed rule. Look for language like "may", "if satisfied", "as the Secretary of State considers appropriate", "shall determine", or similar.
 
-Return a table with two columns: Section and Discretion Exercised (brief plain English description). Nothing else.
+Example response format:
+| Section | Discretion Exercised |
+|---|---|
+| Section 3(1) | May grant or refuse leave to remain |
+| Section 7(2)(a) | Can set the length of the reporting period |
+| Section 14(3)(b) | Must be satisfied the applicant meets the criteria |
+
 
