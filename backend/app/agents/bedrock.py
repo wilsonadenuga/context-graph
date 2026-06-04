@@ -112,8 +112,11 @@ class BedrockAdapter(AgentAdapter):
         
         # Inference configuration
         self.inference_config = {
+            # Controls randomness: lower values make output more focused/deterministic
             "temperature": temperature,
+            # Maximum number of tokens the model can generate in its response
             "maxTokens": max_tokens,
+            # Nucleus sampling: only consider tokens whose cumulative probability reaches this threshold
             "topP": top_p,
         }
 
