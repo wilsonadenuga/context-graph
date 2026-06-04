@@ -5,10 +5,18 @@
 import boto3
 import json
 import random
+import os
+
+# AWS Credentials - Set these or use IAM role on EC2
+AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID', 'your-access-key-here')
+AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY', 'your-secret-key-here')
+AWS_REGION = os.getenv('AWS_REGION', 'us-east-1')
 
 bedrock_runtime = boto3.client(
     service_name='bedrock-runtime',
-    region_name='us-east-1'
+    region_name=AWS_REGION,
+    aws_access_key_id=AWS_ACCESS_KEY_ID,
+    aws_secret_access_key=AWS_SECRET_ACCESS_KEY
 )
 
 MODEL_ID = "anthropic.claude-3-5-sonnet-20241022-v2:0"
@@ -33,7 +41,7 @@ request_body = {
     "top_p": 0.9
 }
 
-print("� Generating GTA Fact...\n").
+print("� Generating GTA Fact...\n")
 
 response = bedrock_runtime.invoke_model_with_response_stream(
     modelId=MODEL_ID,
@@ -52,3 +60,6 @@ for event in stream:
                 print(chunk_data['delta']['text'], end='', flush=True)
 
 print("\n")
+
+if __name__ == "__main__":
+    pass
