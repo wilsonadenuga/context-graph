@@ -1,65 +1,9 @@
-#!/usr/bin/env python3
-# AWS Bedrock streaming example
-# Docs: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/bedrock-runtime.html
-
-import boto3
-import json
-import random
-import os
-
-# AWS Credentials - Set these or use IAM role on EC2
-AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID', 'your-access-key-here')
-AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY', 'your-secret-key-here')
-AWS_REGION = os.getenv('AWS_REGION', 'us-east-1')
-
-bedrock_runtime = boto3.client(
-    service_name='bedrock-runtime',
-    region_name=AWS_REGION,
-    aws_access_key_id=AWS_ACCESS_KEY_ID,
-    aws_secret_access_key=AWS_SECRET_ACCESS_KEY
-)
-
-MODEL_ID = "anthropic.claude-3-5-sonnet-20241022-v2:0"
-
-prompts = [
-    "Tell me an interesting and lesser-known fact about the Grand Theft Auto game series.",
-    "Share a surprising Easter egg or hidden detail from GTA games.",
-    "Tell me about a memorable mission or moment from GTA history.",
-    "Share an interesting fact about GTA game development or records.",
-]
-
-request_body = {
-    "anthropic_version": "bedrock-2023-05-31",
-    "max_tokens": 500,
-    "messages": [
-        {
-            "role": "user",
-            "content": random.choice(prompts)
-        }
-    ],
-    "temperature": 0.8,
-    "top_p": 0.9
-}
-
-print("� Generating GTA Fact...\n")
-
-response = bedrock_runtime.invoke_model_with_response_stream(
-    modelId=MODEL_ID,
-    body=json.dumps(request_body)
-)
-
-stream = response.get('body')
-
-for event in stream:
-    chunk = event.get('chunk')
-    if chunk:
-        chunk_data = json.loads(chunk.get('bytes').decode())
-        
-        if chunk_data['type'] == 'content_block_delta':
-            if chunk_data['delta']['type'] == 'text_delta':
-                print(chunk_data['delta']['text'], end='', flush=True)
-
-print("\n")
-
-if __name__ == "__main__":
-    pass
+Hi Bogdan,
+Thanks for reaching out. I've had a think and hopefully this is helpful.
+On Minute, I thought we worked well together. You set up the environment, I prepared the Docker files, and we got through it without any issues. I was also impressed with how you presented the findings to SLT. You took what we'd built and communicated it clearly to a senior audience, which is not something everyone can do well.
+Context Graphs was a similar experience. We prepared the environment for deployment together and it went smoothly, largely because you'd already thought through what needed to happen before we got into it.
+On Wiz, you consistently stay on top of vulnerabilities and security patches and make sure we're in good standing with the cybersecurity team. I don't think the effort that goes into that is always visible, but working alongside you I can see how much of it there is.
+I'd also mention that whenever I've come across something I wasn't familiar with, you've always taken the time to explain it to me properly. And the knowledge sharing sessions you organise for the wider team are something you do voluntarily, which I think reflects well on how you approach your work.
+The only thing I'd say from my side is that I'd welcome more involvement in stakeholder-facing activities, like the SLT presentations. I think there's a lot I could learn from being part of those.
+Happy to discuss any of this further if it helps.
+Wilson
