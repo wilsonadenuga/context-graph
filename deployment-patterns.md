@@ -52,7 +52,7 @@ The new code is deployed but wrapped in a switch, so a feature can be turned on 
 
 - Pros: Fast feature control and easy rollback.
 - Cons: Flags need proper management and should be removed once a feature is stable, or they pile up into complexity.
-
+ 
 ## 8. Immutable Deployment
 
 Instead of updating existing servers, you build completely new servers or containers and replace the old ones outright. Nothing is patched in place, so every deployment starts from a known, clean state, which avoids the slow drift that comes from repeatedly changing live machines. It is a principle you combine with the others rather than a competing choice: blue-green and rolling are often done the immutable way.
