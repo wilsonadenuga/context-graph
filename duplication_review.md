@@ -1,1 +1,0 @@
-Recommendation: These two Strengths duplicate the same core point: AI-generated summaries have version history. Keep the product-level statement in Section 1. In Section 2, remove the repeated Strength or replace it with a more technical statement about the scope of version control.
