@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>API documentation uplift rules</title>
+<style>
+body { margin: 32px auto; max-width: 1000px; padding: 0 16px; font: 15px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; color: #172b4d; }
+h2 { margin: 32px 0 10px; font-size: 22px; }
+table { width: 100%; border-collapse: collapse; }
+th, td { border: 1px solid #dfe1e6; padding: 8px 10px; text-align: left; vertical-align: top; }
+td > p { margin: 0 0 8px; }
+pre { margin: 0; padding: 10px 12px; background: #f7f8f9; border: 1px solid #dfe1e6; border-radius: 3px; overflow-x: auto; font: 12.5px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; }
+</style>
+</head>
+<body>
+<p>These are the 9 rules our uplift tool uses to bring API documentation (OpenAPI YAML files) up to the GOV.UK standard, so the docs are easier to use for developers and for AI agents that call our APIs. Each rule says what it means and shows good and bad YAML side by side.</p><h2>The 9 rules at a glance</h2><table><thead><tr><th>#</th><th>Rule</th><th>Applies to</th><th>Strength</th></tr></thead><tbody><tr><td>1</td><td>Set up the file</td><td><code>openapi</code>, <code>info.version</code>, <code>servers</code></td><td>Should</td></tr><tr><td>2</td><td>Write a complete API description</td><td><code>info.description</code>, <code>info.contact</code></td><td>Should</td></tr><tr><td>3</td><td>Describe every endpoint</td><td><code>paths</code>, <code>tags</code>, each endpoint's <code>summary</code> and <code>description</code></td><td>Should</td></tr><tr><td>4</td><td>Describe what you send and what comes back</td><td><code>parameters</code>, <code>requestBody</code>, <code>responses</code> and the fields in <code>components.schemas</code></td><td>Must</td></tr><tr><td>5</td><td>Document errors clearly and safely</td><td>Every error response (4xx and 5xx), and the shared <code>Error</code> schema</td><td>Must</td></tr><tr><td>6</td><td>Explain permissions</td><td><code>components.securitySchemes</code> and each endpoint's <code>security</code></td><td>Should</td></tr><tr><td>7</td><td>Explain how often the API can be used</td><td>The <code>429</code> response and response <code>headers</code></td><td>Must</td></tr><tr><td>8</td><td>Give notice before removing anything</td><td>Endpoints marked <code>deprecated</code></td><td>Must</td></tr><tr><td>9</td><td>Write in plain English</td><td>Every <code>summary</code> and <code>description</code> in the file</td><td>Should</td></tr></tbody></table><p><strong>Must</strong> means GOV.UK says must for part of the rule. <strong>Should</strong> means GOV.UK recommends it. The examples use a made-up Claim status API.</p><h2>Rule 1: Set up the file</h2><p><strong>Strength:</strong> Should<br><strong>Applies to:</strong> <code>openapi</code>, <code>info.version</code>, <code>servers</code></p><p><strong>What it means:</strong> The file uses OpenAPI 3, the format GOV.UK recommends. It has a real version number (like 1.4.0) whose first number matches the version in the web address (/v1). It lists where to send requests: the live address and, if there is one, the sandbox (a test version with fake data), with a note on how the sandbox differs from live. Each live version of the API has its own file.</p><table><thead><tr><th class="highlight-green" data-highlight-colour="green" style="background-color:#e3fcef">✅ Good</th><th class="highlight-red" data-highlight-colour="red" style="background-color:#ffebe6">❌ Bad</th></tr></thead><tbody><tr><td class="highlight-green" data-highlight-colour="green" style="vertical-align:top;background-color:#e3fcef"><p>OpenAPI 3, a real version number that matches the address, and live and sandbox addresses with the sandbox explained.</p><pre data-language="yaml"><code class="language-yaml"># claim-status-v1.yaml
+openapi: 3.1.0
+info:
+  title: Claim status API
+  version: 1.4.0
+servers:
+  - url: https://claim-status.api.gov.uk/v1
+    description: Live
+  - url: https://sandbox.claim-status.api.gov.uk/v1
+    description: &gt;-
+      Sandbox. Fake data only. It doesn't save changes,
+      so an update won't show on your next call.</code></pre></td><td class="highlight-red" data-highlight-colour="red" style="vertical-align:top;background-color:#ffebe6"><p>Uses the old Swagger 2.0 format, one file covers two versions, the version is "latest" instead of a number, and it only lists the sandbox, with no live address and no description.</p><pre data-language="yaml"><code class="language-yaml"># claim-status.yaml, used for v1 and v2
+swagger: "2.0"
+info:
+  title: claims
+  version: latest
+host: sandbox.claim-status.api.gov.uk</code></pre></td></tr></tbody></table><h2>Rule 2: Write a complete API description</h2><p><strong>Strength:</strong> Should<br><strong>Applies to:</strong> <code>info.description</code>, <code>info.contact</code></p><p><strong>What it means:</strong> The main description is the front page of the docs. It says what the API does and doesn't do, who can use it, what stage it's at (alpha, beta or live), whether it's free and what you need first, with no sales talk. It then has short sections on how to make a first test request, how to get help (a team email, not one person's) and how versions work.</p><table><thead><tr><th class="highlight-green" data-highlight-colour="green" style="background-color:#e3fcef">✅ Good</th><th class="highlight-red" data-highlight-colour="red" style="background-color:#ffebe6">❌ Bad</th></tr></thead><tbody><tr><td class="highlight-green" data-highlight-colour="green" style="vertical-align:top;background-color:#e3fcef"><p>Says what the API does and doesn't do, who it's for, how to make a first request, where to get help and how versions work.</p><pre data-language="yaml"><code class="language-yaml">info:
+  description: |
+    Check where a claim is up to and add evidence to it,
+    so claimants don't have to phone. It doesn't show
+    payments.
+    For: DWP case-working systems. Phase: beta. Free.
+    You need: OAuth client credentials.
+
+    ## Get started
+    1. Get test credentials from the developer portal.
+    2. Swap them for a token. New to OAuth?
+       See https://oauth.net/2/
+    3. Send GET /claims/CLM-00012345 to the sandbox
+       with the header Authorization: Bearer &lt;token&gt;
+    4. You get the claim back as JSON.
+
+    ## Order of calls
+    1. Find the claim: GET /claims/{claim_id}
+    2. Add evidence: POST /claims/{claim_id}/evidence
+
+    ## Support
+    Report security issues to security@example.gov.uk.
+    We reply within 2 working days.
+    Status: https://status.example.gov.uk
+
+    ## Versions
+    The major version is in the URL (/v1).
+    Changes:
+    https://claim-status.api.gov.uk/docs/changes
+    Retirement policy:
+    https://claim-status.api.gov.uk/docs/retirement
+  contact:
+    name: Claim status API team
+    email: claim-status-api@example.gov.uk</code></pre></td><td class="highlight-red" data-highlight-colour="red" style="vertical-align:top;background-color:#ffebe6"><p>Uses sales language ("world-class, seamless"), explains what OAuth is instead of linking to a guide, gives one person's email instead of a team email, and has no Get started steps.</p><pre data-language="yaml"><code class="language-yaml">info:
+  title: CLM-SVC
+  description: &gt;-
+    A world-class, seamless claims solution. This API
+    uses OAuth 2.0, an industry standard that lets an
+    app get limited access to another service...
+  contact:
+    email: j.smith@example.gov.uk</code></pre></td></tr></tbody></table><h2>Rule 3: Describe every endpoint</h2><p><strong>Strength:</strong> Should<br><strong>Applies to:</strong> <code>paths</code>, <code>tags</code>, each endpoint's <code>summary</code> and <code>description</code></p><p><strong>What it means:</strong> An endpoint is one thing you can ask the API to do, like check a claim's status. Every endpoint is in the docs, grouped with similar ones. Each has a short title that starts with a doing word, a description of what it does, and the next step where there's an obvious one.</p><table><thead><tr><th class="highlight-green" data-highlight-colour="green" style="background-color:#e3fcef">✅ Good</th><th class="highlight-red" data-highlight-colour="red" style="background-color:#ffebe6">❌ Bad</th></tr></thead><tbody><tr><td class="highlight-green" data-highlight-colour="green" style="vertical-align:top;background-color:#e3fcef"><p>A described group, a title that starts with a doing word, a clear description and a pointer to the next step.</p><pre data-language="yaml"><code class="language-yaml">tags:
+  - name: Claims
+    description: Look up claims and add evidence.
+paths:
+  /claims/{claim_id}:
+    get:
+      tags: [Claims]
+      summary: Check a claim's status
+      description: &gt;-
+        Returns where one claim is up to. Next, you
+        can add evidence with
+        POST /claims/{claim_id}/evidence.</code></pre></td><td class="highlight-red" data-highlight-colour="red" style="vertical-align:top;background-color:#ffebe6"><p>The group is named after the code (ClaimsController), and the endpoint has no title or description, only a code name (getClm).</p><pre data-language="yaml"><code class="language-yaml">tags:
+  - name: ClaimsController
+paths:
+  /claims/{claim_id}:
+    get:
+      operationId: getClm</code></pre></td></tr></tbody></table><h2>Rule 4: Describe what you send and what comes back</h2><p><strong>Strength:</strong> Must<br><strong>Applies to:</strong> <code>parameters</code>, <code>requestBody</code>, <code>responses</code> and the fields in <code>components.schemas</code></p><p><strong>What it means:</strong> The docs show exactly what to send and what comes back. Every item says what it is, whether it's text, a number or a date, what values are allowed, and whether it's needed. Each request and response says its format (normally JSON) and has a full example with realistic values. Dates must be written year first, like 2026-11-03. Locations use the standard GeoJSON format.</p><table><thead><tr><th class="highlight-green" data-highlight-colour="green" style="background-color:#e3fcef">✅ Good</th><th class="highlight-red" data-highlight-colour="red" style="background-color:#ffebe6">❌ Bad</th></tr></thead><tbody><tr><td class="highlight-green" data-highlight-colour="green" style="vertical-align:top;background-color:#e3fcef"><p>Every item is described, the format is stated, and there's a realistic example of what to send and what comes back. The date is year first.</p><pre data-language="yaml"><code class="language-yaml"># On the endpoint: PATCH /claims/{claim_id}/contact
+parameters:
+  - name: claim_id
+    in: path
+    required: true
+    description: The claim reference.
+    schema:
+      type: string
+      pattern: "^CLM-[0-9]{8}$"
+    example: CLM-00012345
+requestBody:
+  content:
+    application/json:
+      schema:
+        $ref: "#/components/schemas/ContactUpdate"
+      example:
+        contact_preference: email
+responses:
+  "200":
+    description: Contact preference updated.
+    content:
+      application/json:
+        schema:
+          $ref: "#/components/schemas/Claim"
+        example:
+          claim_id: CLM-00012345
+          decided_on: "2026-11-03"
+          contact_preference: email
+
+# The shape of a claim
+components:
+  schemas:
+    Claim:
+      type: object
+      required: [claim_id]
+      properties:
+        claim_id:
+          type: string
+          description: The claim reference.
+        decided_on:
+          type: string
+          format: date
+          description: Date of the decision.
+        contact_preference:
+          type: string
+          description: How we contact the claimant.
+          enum: [email, post, phone]</code></pre></td><td class="highlight-red" data-highlight-colour="red" style="vertical-align:top;background-color:#ffebe6"><p>Nothing is described, nothing is marked as required, any format is accepted (*/*), the example uses the filler word "string", there's no example response, and the date 03/11/2026 could mean 3 November or 11 March.</p><pre data-language="yaml"><code class="language-yaml"># On the endpoint: PATCH /claims/{claim_id}/contact
+parameters:
+  - name: claim_id
+    in: path
+    required: true
+    schema:
+      type: string
+requestBody:
+  content:
+    "*/*":
+      example:
+        contact_preference: string
+responses:
+  "200":
+    description: OK
+
+# The shape of a claim
+components:
+  schemas:
+    Claim:
+      type: object
+      properties:
+        decided_on:
+          type: string
+          example: "03/11/2026"
+        contact_preference:
+          type: string</code></pre></td></tr></tbody></table><h2>Rule 5: Document errors clearly and safely</h2><p><strong>Strength:</strong> Must<br><strong>Applies to:</strong> Every error response (4xx and 5xx), and the shared <code>Error</code> schema</p><p><strong>What it means:</strong> Each endpoint lists the errors it can return and explains in plain words what went wrong. All errors must follow the same layout, and none of them reveal how the system works inside, such as database or server names. The too-many-requests error is covered in rule 7.</p><table><thead><tr><th class="highlight-green" data-highlight-colour="green" style="background-color:#e3fcef">✅ Good</th><th class="highlight-red" data-highlight-colour="red" style="background-color:#ffebe6">❌ Bad</th></tr></thead><tbody><tr><td class="highlight-green" data-highlight-colour="green" style="vertical-align:top;background-color:#e3fcef"><p>Lists each error and says exactly what went wrong, and every error uses the same layout (the shared Error schema).</p><pre data-language="yaml"><code class="language-yaml"># Inside an endpoint: GET /claims/{claim_id}
+responses:
+  "400":
+    description: &gt;-
+      The claim reference isn't in the format
+      CLM-12345678.
+    content:
+      application/json:
+        schema:
+          $ref: "#/components/schemas/Error"
+  "404":
+    description: No claim has that reference.
+    content:
+      application/json:
+        schema:
+          $ref: "#/components/schemas/Error"
+        example:
+          code: CLAIM_NOT_FOUND
+          message: No claim found with that reference</code></pre></td><td class="highlight-red" data-highlight-colour="red" style="vertical-align:top;background-color:#ffebe6"><p>The errors only say "Bad Request" and "Internal Server Error", which doesn't help anyone fix the problem, and the 500 example uses its own layout and gives away a database table name.</p><pre data-language="yaml"><code class="language-yaml"># Inside an endpoint: GET /claims/{claim_id}
+responses:
+  "400":
+    description: Bad Request
+  "500":
+    description: Internal Server Error
+    content:
+      application/json:
+        example:
+          msg: "ORA-00942: CLAIMS_PROD.T_CLM not found"</code></pre></td></tr></tbody></table><h2>Rule 6: Explain permissions</h2><p><strong>Strength:</strong> Should<br><strong>Applies to:</strong> <code>components.securitySchemes</code> and each endpoint's <code>security</code></p><p><strong>What it means:</strong> A permission (called a scope) controls what someone using the API is allowed to do, like read a claim or change one. Each permission says what it allows, each endpoint says which one it needs, and the docs give the full web address for getting a token (a temporary pass to use the API).</p><table><thead><tr><th class="highlight-green" data-highlight-colour="green" style="background-color:#e3fcef">✅ Good</th><th class="highlight-red" data-highlight-colour="red" style="background-color:#ffebe6">❌ Bad</th></tr></thead><tbody><tr><td class="highlight-green" data-highlight-colour="green" style="vertical-align:top;background-color:#e3fcef"><p>Explains each permission, names the one this endpoint needs, and gives the full token address.</p><pre data-language="yaml"><code class="language-yaml">components:
+  securitySchemes:
+    oauth2:
+      type: oauth2
+      description: Client credentials. See Get started.
+      flows:
+        clientCredentials:
+          tokenUrl: https://auth.example.gov.uk/token
+          scopes:
+            claims-read: Read a claim's status
+            claims-write: Add evidence to a claim
+paths:
+  /claims/{claim_id}:
+    get:
+      security:
+        - oauth2: [claims-read]</code></pre></td><td class="highlight-red" data-highlight-colour="red" style="vertical-align:top;background-color:#ffebe6"><p>The token address is incomplete (/token), no permissions are listed, and the endpoint doesn't say which permission it needs.</p><pre data-language="yaml"><code class="language-yaml">components:
+  securitySchemes:
+    oauth2:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: /token
+          scopes: {}
+paths:
+  /claims/{claim_id}:
+    get:
+      summary: Check a claim's status</code></pre></td></tr></tbody></table><h2>Rule 7: Explain how often the API can be used</h2><p><strong>Strength:</strong> Must<br><strong>Applies to:</strong> The <code>429</code> response and response <code>headers</code></p><p><strong>What it means:</strong> The docs say how many requests users can make, for example 100 a minute. They must explain the too-many-requests error: what to do and how long to wait. They also say how long an answer can be reused before asking again (this is called caching).</p><table><thead><tr><th class="highlight-green" data-highlight-colour="green" style="background-color:#e3fcef">✅ Good</th><th class="highlight-red" data-highlight-colour="red" style="background-color:#ffebe6">❌ Bad</th></tr></thead><tbody><tr><td class="highlight-green" data-highlight-colour="green" style="vertical-align:top;background-color:#e3fcef"><p>Gives the limit (100 a minute), how many requests are left, how long to wait, and how long an answer can be reused.</p><pre data-language="yaml"><code class="language-yaml"># Inside an endpoint: GET /claims/{claim_id}
+responses:
+  "200":
+    description: The claim was found.
+    headers:
+      Cache-Control:
+        description: How long you can reuse this.
+        schema:
+          type: string
+          example: private, max-age=60
+      X-RateLimit-Remaining:
+        description: Requests left this minute.
+        schema:
+          type: integer
+          example: 42
+  "429":
+    description: &gt;-
+      Too many requests. The limit is 100 a minute.
+      Wait for the seconds in Retry-After, then retry.
+    headers:
+      Retry-After:
+        schema:
+          type: integer
+          example: 30</code></pre></td><td class="highlight-red" data-highlight-colour="red" style="vertical-align:top;background-color:#ffebe6"><p>Only says "OK" and "Too Many Requests". It doesn't give the limit, say how long to wait, or say how long an answer can be reused.</p><pre data-language="yaml"><code class="language-yaml"># Inside an endpoint: GET /claims/{claim_id}
+responses:
+  "200":
+    description: OK
+  "429":
+    description: Too Many Requests</code></pre></td></tr></tbody></table><h2>Rule 8: Give notice before removing anything</h2><p><strong>Strength:</strong> Must<br><strong>Applies to:</strong> Endpoints marked <code>deprecated</code></p><p><strong>What it means:</strong> Anything that's going to be removed is clearly marked. It must say when it will be removed, and should say what to use instead and include the standard Sunset message with the date. For a live API, aim to give at least 6 months' notice.</p><table><thead><tr><th class="highlight-green" data-highlight-colour="green" style="background-color:#e3fcef">✅ Good</th><th class="highlight-red" data-highlight-colour="red" style="background-color:#ffebe6">❌ Bad</th></tr></thead><tbody><tr><td class="highlight-green" data-highlight-colour="green" style="vertical-align:top;background-color:#e3fcef"><p>Clearly marked, with a removal date, what to use instead, and the Sunset message.</p><pre data-language="yaml"><code class="language-yaml">paths:
+  /claims/{claim_id}/notes:
+    get:
+      deprecated: true
+      description: &gt;-
+        Removed on 31 May 2027. Use
+        GET /claims/{claim_id}/evidence instead.
+      responses:
+        "200":
+          description: The notes.
+          headers:
+            Sunset:
+              description: The removal date.
+              schema:
+                type: string
+                example: "Mon, 31 May 2027 00:00:00 GMT"</code></pre></td><td class="highlight-red" data-highlight-colour="red" style="vertical-align:top;background-color:#ffebe6"><p>Marked as being removed, but with no removal date and nothing to use instead.</p><pre data-language="yaml"><code class="language-yaml">paths:
+  /claims/{claim_id}/notes:
+    get:
+      deprecated: true
+      responses:
+        "200":
+          description: OK</code></pre></td></tr></tbody></table><h2>Rule 9: Write in plain English</h2><p><strong>Strength:</strong> Should<br><strong>Applies to:</strong> Every <code>summary</code> and <code>description</code> in the file</p><p><strong>What it means:</strong> All the words in the docs read like GOV.UK content: short sentences, everyday words, talking to the reader as "you", and about what the user is trying to do, not the technology. Abbreviations are spelled out the first time. Other rules say what must be in the docs. This one is about how it's written.</p><table><thead><tr><th class="highlight-green" data-highlight-colour="green" style="background-color:#e3fcef">✅ Good</th><th class="highlight-red" data-highlight-colour="red" style="background-color:#ffebe6">❌ Bad</th></tr></thead><tbody><tr><td class="highlight-green" data-highlight-colour="green" style="vertical-align:top;background-color:#e3fcef"><p>Short and direct, talks to the reader as "you", and spells out the abbreviation.</p><pre data-language="yaml"><code class="language-yaml"># Any summary or description in the file
+description: &gt;-
+  Returns the claim's current status. You need the
+  claimant's National Insurance number (NINO).</code></pre></td><td class="highlight-red" data-highlight-colour="red" style="vertical-align:top;background-color:#ffebe6"><p>Talks about the technology ("orchestration layer") and uses abbreviations (NINO, CIS) without explaining them.</p><pre data-language="yaml"><code class="language-yaml"># Any summary or description in the file
+description: &gt;-
+  Facilitates retrieval of the status entity via the
+  orchestration layer. Requires NINO and CIS ref.</code></pre></td></tr></tbody></table><h2>Sources</h2><p>All from GOV.UK:</p><ul><li><a href="https://www.gov.uk/guidance/gds-api-technical-and-data-standards">API technical and data standards</a></li><li><a href="https://www.gov.uk/guidance/how-to-document-apis">Documenting APIs</a></li><li><a href="https://www.gov.uk/guidance/writing-api-reference-documentation">Writing API reference documentation</a></li><li><a href="https://www.gov.uk/guidance/defining-an-api-management-strategy">Defining an API management strategy</a></li><li><a href="https://www.gov.uk/guidance/managing-your-live-api">Managing your live API</a></li><li><a href="https://www.gov.uk/guidance/setting-api-service-levels">Setting API service levels</a></li></ul>
+</body>
+</html>
