@@ -1,3 +1,23 @@
+# API documentation uplift rules
+
+These are the 9 rules our uplift tool uses to bring API documentation (OpenAPI YAML files) up to the GOV.UK standard, so the docs are easier to use for developers and for AI agents that call our APIs. Each rule says what it means and shows good and bad YAML.
+
+## The 9 rules at a glance
+
+| # | Rule | Applies to | Strength |
+| --- | --- | --- | --- |
+| 1 | Set up the file | `openapi`, `info.version`, `servers` | Should |
+| 2 | Write a complete API description | `info.description`, `info.contact` | Should |
+| 3 | Describe every endpoint | `paths`, `tags`, each endpoint's `summary` and `description` | Should |
+| 4 | Describe what you send and what comes back | `parameters`, `requestBody`, `responses` and the fields in `components.schemas` | Must |
+| 5 | Document errors clearly and safely | Every error response (4xx and 5xx), and the shared `Error` schema | Must |
+| 6 | Explain permissions | `components.securitySchemes` and each endpoint's `security` | Should |
+| 7 | Explain how often the API can be used | The `429` response and response `headers` | Must |
+| 8 | Give notice before removing anything | Endpoints marked `deprecated` | Must |
+| 9 | Write in plain English | Every `summary` and `description` in the file | Should |
+
+**Must** means GOV.UK says must for part of the rule. **Should** means GOV.UK recommends it. The examples use a made-up Claim status API.
+
 ## Rule 1: Set up the file
 
 **Strength:** Should  
@@ -420,3 +440,14 @@ description: >-
   Facilitates retrieval of the status entity via the
   orchestration layer. Requires NINO and CIS ref.
 ```
+
+## Sources
+
+All from GOV.UK:
+
+- [API technical and data standards](https://www.gov.uk/guidance/gds-api-technical-and-data-standards)
+- [Documenting APIs](https://www.gov.uk/guidance/how-to-document-apis)
+- [Writing API reference documentation](https://www.gov.uk/guidance/writing-api-reference-documentation)
+- [Defining an API management strategy](https://www.gov.uk/guidance/defining-an-api-management-strategy)
+- [Managing your live API](https://www.gov.uk/guidance/managing-your-live-api)
+- [Setting API service levels](https://www.gov.uk/guidance/setting-api-service-levels)
